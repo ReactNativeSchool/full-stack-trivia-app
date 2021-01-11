@@ -1,11 +1,16 @@
 import { gql } from "apollo-server-micro";
 
 export const typeDefs = gql`
-  type ExampleResponse {
-    message: String
+  type Question {
+    category: String
+    type: String
+    difficulty: String
+    question: String
+    correct_answer: String
+    incorrect_answers: [String]
   }
 
   type Query {
-    greet: ExampleResponse
+    quiz: [Question]
   }
 `;
