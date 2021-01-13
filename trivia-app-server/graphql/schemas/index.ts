@@ -6,7 +6,8 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    register(username: String!): UserResponse
+    register(username: String!, password: String!): UserResponse
+    signin(username: String!, password: String!): UserResponse
   }
 
   type Question {
@@ -18,13 +19,9 @@ export const typeDefs = gql`
     incorrect_answers: [String]
   }
 
-  type User {
-    _id: ID
-    username: String
-  }
-
   type UserResponse {
-    user: User
+    username: String
+    token: String
     errors: [Error]
   }
 
