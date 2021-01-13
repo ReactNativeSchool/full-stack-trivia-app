@@ -1,6 +1,14 @@
 import { gql } from "apollo-server-micro";
 
 export const typeDefs = gql`
+  type Query {
+    quiz: [Question]
+  }
+
+  type Mutation {
+    register(username: String!): UserResponse
+  }
+
   type Question {
     category: String
     type: String
@@ -10,7 +18,17 @@ export const typeDefs = gql`
     incorrect_answers: [String]
   }
 
-  type Query {
-    quiz: [Question]
+  type User {
+    _id: ID
+    username: String
+  }
+
+  type UserResponse {
+    user: User
+    errors: [Error]
+  }
+
+  type Error {
+    message: String
   }
 `;
