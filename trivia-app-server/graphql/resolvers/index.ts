@@ -21,57 +21,45 @@ export const resolvers = {
     register: async (parent, args) => {
       await connectMongo();
 
-      try {
-        const { username, password } = args;
+      const { username, password } = args;
 
-        const user = await new User({ username, password }).save();
+      const user = await new User({ username, password }).save();
 
-        const token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
+      const token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
 
-        return {
-          username: user.username,
-          token,
-          errors: [],
-        };
-      } catch (error) {
-        return {
-          username: null,
-          token: null,
-          errors: [{ message: error.message || "Something went wrong..." }],
-        };
-      }
+      return {
+        username: user.username,
+        token,
+        errors: [],
+      };
     },
     signin: async (parent, args) => {
       await connectMongo();
 
-      try {
-        const { username, password } = args;
+      const { username, password } = args;
 
-        const user = await User.findOne({ username }).exec();
+      const user = await User.findOne({ username }).exec();
 
-        const { isMatch } = await user.comparePasswords(password);
-
-        let token = null;
-        if (isMatch) {
-          token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
-        }
-
-        if (!isMatch) {
-          throw new Error("Invalid password.");
-        }
-
-        return {
-          username: username,
-          token,
-          errors: [],
-        };
-      } catch (error) {
-        return {
-          username: null,
-          token: null,
-          errors: [{ message: error.message || "Something went wrong..." }],
-        };
+      if (!user) {
+        throw new Error("No user exists with that username.");
       }
+
+      const { isMatch } = await user.comparePasswords(password);
+
+      let token = null;
+      if (isMatch) {
+        token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
+      }
+
+      if (!isMatch) {
+        throw new Error("Invalid password.");
+      }
+
+      return {
+        username: username,
+        token,
+        errors: [],
+      };
     },
   },
 };

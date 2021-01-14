@@ -15,6 +15,7 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
+    minLength: 2,
   },
 });
 
@@ -25,9 +26,17 @@ UserSchema.pre<IUser>("save", async function (next) {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(user.password, salt);
     user.password = hash;
+
     next();
   } catch (error) {
-    console.log("error", error);
+    next(error);
+  }
+});
+
+UserSchema.post<IUser>("save", async function (error, doc, next) {
+  if (error.name === "MongoError" && error.code === 11000) {
+    next(new Error("Username already used."));
+  } else {
     next(error);
   }
 });
