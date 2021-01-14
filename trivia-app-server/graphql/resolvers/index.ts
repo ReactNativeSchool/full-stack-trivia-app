@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { shuffle } from "lodash";
 
 import { connectMongo } from "../../util/dbConnect";
 import { User } from "../../models/User";
@@ -19,7 +20,14 @@ export const resolvers = {
 
       const questions = await Question.find({}, null, { limit: 3 }).exec();
 
-      return questions;
+      const shuffledQuestions = questions.map((question) => {
+        return {
+          ...question,
+          answers: shuffle(question.answers),
+        };
+      });
+
+      return shuffledQuestions;
     },
   },
 

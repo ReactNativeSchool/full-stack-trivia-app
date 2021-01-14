@@ -20,8 +20,12 @@ export const typeDefs = gql`
     type: String
     difficulty: String
     question: String
-    correct_answer: String
-    incorrect_answers: [String]
+    answers: [QuestionAnswer]
+  }
+
+  type QuestionAnswer {
+    correct: Boolean
+    answer: String
   }
 
   type UserResponse {
