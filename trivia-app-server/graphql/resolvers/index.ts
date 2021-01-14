@@ -2,18 +2,24 @@ import jwt from "jsonwebtoken";
 
 import { connectMongo } from "../../util/dbConnect";
 import { User } from "../../models/User";
+import { Question } from "../../models/Question";
+
+const requireAuth = (context) => {
+  if (!context.userId) {
+    throw new Error("Authentication required.");
+  }
+
+  return;
+};
 
 export const resolvers = {
   Query: {
-    quiz: (parent, args, context) => {
-      let url = "https://opentdb.com/api.php?amount=10";
-      if (!context.userId) {
-        url = "https://opentdb.com/api.php?amount=1";
-      }
+    quiz: async (parent, args, context) => {
+      await connectMongo();
 
-      return fetch(url)
-        .then((res) => res.json())
-        .then((res) => res.results);
+      const questions = await Question.find({}, null, { limit: 3 }).exec();
+
+      return questions;
     },
   },
 
@@ -60,6 +66,38 @@ export const resolvers = {
         token,
         errors: [],
       };
+    },
+
+    fetchQuestions: async (parent, args, context) => {
+      await connectMongo();
+
+      requireAuth(context);
+
+      // TODO: this should be limited to people with an admin role
+
+      const res = await fetch("https://opentdb.com/api.php?amount=50");
+      const { results } = await res.json();
+
+      const formattedResults = results.map((result) => {
+        return {
+          ...result,
+          question: unescape(result.question),
+          answers: [
+            {
+              answer: result.correct_answer,
+              correct: true,
+            },
+            ...result.incorrect_answers.map((ans) => ({
+              answer: ans,
+              correct: false,
+            })),
+          ],
+        };
+      });
+
+      const inserRes = await Question.insertMany(formattedResults);
+
+      return { questionsSaved: inserRes.length };
     },
   },
 };
