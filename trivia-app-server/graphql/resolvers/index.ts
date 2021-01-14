@@ -5,8 +5,13 @@ import { User } from "../../models/User";
 
 export const resolvers = {
   Query: {
-    quiz: () => {
-      return fetch("https://opentdb.com/api.php?amount=10")
+    quiz: (parent, args, context) => {
+      let url = "https://opentdb.com/api.php?amount=10";
+      if (!context.userId) {
+        url = "https://opentdb.com/api.php?amount=1";
+      }
+
+      return fetch(url)
         .then((res) => res.json())
         .then((res) => res.results);
     },
