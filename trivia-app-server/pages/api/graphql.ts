@@ -15,7 +15,7 @@ const apolloServer = new ApolloServer({
     const context: IContext = {};
 
     if (req?.headers?.authorization) {
-      const [, token] = req.headers.authorization.split("Bearer: ");
+      const [, token] = req.headers.authorization.split("Bearer ");
 
       const decoded = await jwt.verify(token, process.env.JWT_SECRET);
 

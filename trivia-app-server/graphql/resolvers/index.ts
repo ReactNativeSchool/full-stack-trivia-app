@@ -1,6 +1,11 @@
 import jwt from "jsonwebtoken";
 import { isBoolean, shuffle } from "lodash";
 import mongoose from "mongoose";
+import {
+  AuthenticationError,
+  UserInputError,
+  ApolloError,
+} from "apollo-server-micro";
 
 import { connectMongo } from "../../util/dbConnect";
 import { User } from "../../models/User";
@@ -8,13 +13,13 @@ import { Question } from "../../models/Question";
 
 const requireAuth = async (context) => {
   if (!context.userId) {
-    throw new Error("Authentication required.");
+    throw new AuthenticationError("Authentication required.");
   }
 
   const user = await User.findOne({ _id: context.userId });
 
   if (!user) {
-    throw new Error("Invalid user. Sign in.");
+    throw new AuthenticationError("Invalid user. Sign in.");
   }
 
   return;
@@ -49,7 +54,7 @@ export const resolvers = {
       ]);
 
       if (questions.length === 0) {
-        throw new Error("Sorry, you've answered all of the questions.");
+        throw new ApolloError("Sorry, you've answered all of the questions.");
       }
 
       const question = {
@@ -84,7 +89,7 @@ export const resolvers = {
       const user = await User.findOne({ username }).exec();
 
       if (!user) {
-        throw new Error("No user exists with that username.");
+        throw new UserInputError("Invalid username.");
       }
 
       const { isMatch } = await user.comparePasswords(password);
@@ -95,7 +100,7 @@ export const resolvers = {
       }
 
       if (!isMatch) {
-        throw new Error("Invalid password.");
+        throw new UserInputError("Invalid password.");
       }
 
       return {
@@ -143,16 +148,16 @@ export const resolvers = {
       await requireAuth(context);
 
       if (!args.questionId) {
-        throw new Error("No question specified.");
+        throw new UserInputError("No question specified.");
       }
 
       if (!isBoolean(args.correct)) {
-        throw new Error("Invalid input for correct.");
+        throw new UserInputError("Invalid input for correct.");
       }
 
       const question = await Question.findOne({ _id: args.questionId });
       if (!question) {
-        throw new Error("Invalid question ID.");
+        throw new UserInputError("Invalid question ID.");
       }
 
       let modifier;
