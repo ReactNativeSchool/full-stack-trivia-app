@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 interface IUser extends mongoose.Document {
   username: string;
   password: string;
+  incorrectQuestions: [string];
+  correctQuestions: [string];
 }
 
 const UserSchema = new mongoose.Schema({
@@ -16,6 +18,14 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
     minLength: 2,
+  },
+  incorrectQuestions: {
+    type: [String],
+    default: [],
+  },
+  correctQuestions: {
+    type: [String],
+    default: [],
   },
 });
 

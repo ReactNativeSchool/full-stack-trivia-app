@@ -1,13 +1,20 @@
 import jwt from "jsonwebtoken";
-import { shuffle } from "lodash";
+import { isBoolean, shuffle } from "lodash";
+import mongoose from "mongoose";
 
 import { connectMongo } from "../../util/dbConnect";
 import { User } from "../../models/User";
 import { Question } from "../../models/Question";
 
-const requireAuth = (context) => {
+const requireAuth = async (context) => {
   if (!context.userId) {
     throw new Error("Authentication required.");
+  }
+
+  const user = await User.findOne({ _id: context.userId });
+
+  if (!user) {
+    throw new Error("Invalid user. Sign in.");
   }
 
   return;
@@ -15,19 +22,42 @@ const requireAuth = (context) => {
 
 export const resolvers = {
   Query: {
-    quiz: async (parent, args, context) => {
+    question: async (parent, args, context) => {
       await connectMongo();
 
-      const questions = await Question.find({}, null, { limit: 3 }).exec();
+      // If an authenticated user get a question they haven't answered before.
+      let questionsAlreadyAsked = [];
+      if (context.userId) {
+        const user = await User.findOne({ _id: context.userId });
+        if (user) {
+          questionsAlreadyAsked = [
+            ...user.correctQuestions.map((_id) => mongoose.Types.ObjectId(_id)),
+            ...user.incorrectQuestions.map((_id) =>
+              mongoose.Types.ObjectId(_id)
+            ),
+          ];
+        }
+      }
 
-      const shuffledQuestions = questions.map((question) => {
-        return {
-          ...question,
-          answers: shuffle(question.answers),
-        };
-      });
+      const questions = await Question.aggregate([
+        {
+          $match: { _id: { $nin: questionsAlreadyAsked } },
+        },
+        {
+          $sample: { size: 1 },
+        },
+      ]);
 
-      return shuffledQuestions;
+      if (questions.length === 0) {
+        throw new Error("Sorry, you've answered all of the questions.");
+      }
+
+      const question = {
+        ...questions[0],
+        answers: shuffle(questions[0].answers),
+      };
+
+      return question;
     },
   },
 
@@ -44,7 +74,6 @@ export const resolvers = {
       return {
         username: user.username,
         token,
-        errors: [],
       };
     },
     signin: async (parent, args) => {
@@ -72,24 +101,24 @@ export const resolvers = {
       return {
         username: username,
         token,
-        errors: [],
       };
     },
 
     fetchQuestions: async (parent, args, context) => {
       await connectMongo();
 
-      requireAuth(context);
+      await requireAuth(context);
 
       // TODO: this should be limited to people with an admin role
 
-      const res = await fetch("https://opentdb.com/api.php?amount=50");
+      const res = await fetch("https://opentdb.com/api.php?amount=3");
       const { results } = await res.json();
 
       const formattedResults = results.map((result) => {
         return {
           ...result,
-          question: unescape(result.question),
+          // TODO: unescape the result
+          question: result.question,
           answers: [
             {
               answer: result.correct_answer,
@@ -106,6 +135,55 @@ export const resolvers = {
       const inserRes = await Question.insertMany(formattedResults);
 
       return { questionsSaved: inserRes.length };
+    },
+
+    completeQuestion: async (parent, args, context) => {
+      await connectMongo();
+
+      await requireAuth(context);
+
+      if (!args.questionId) {
+        throw new Error("No question specified.");
+      }
+
+      if (!isBoolean(args.correct)) {
+        throw new Error("Invalid input for correct.");
+      }
+
+      const question = await Question.findOne({ _id: args.questionId });
+      if (!question) {
+        throw new Error("Invalid question ID.");
+      }
+
+      let modifier;
+
+      // TODO: avoid duplicates between correctQuestions and incorrectQuestions
+
+      if (args.correct) {
+        modifier = { correctQuestions: args.questionId };
+      } else {
+        modifier = { incorrectQuestions: args.questionId };
+      }
+
+      const response = await User.findOneAndUpdate(
+        { _id: context.userId },
+        {
+          // Use $addToSet over $push to avoid duplicates
+          $addToSet: modifier,
+        },
+        {
+          new: true,
+        }
+      );
+
+      const questionsAnsweredCorrectly = response.correctQuestions?.length || 0;
+      const questionsAnswered =
+        questionsAnsweredCorrectly + response.incorrectQuestions?.length || 0;
+
+      return {
+        questionsAnswered,
+        questionsAnsweredCorrectly,
+      };
     },
   },
 };
