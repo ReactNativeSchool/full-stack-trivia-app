@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { typeDefs } from "../../graphql/schemas";
 import { resolvers } from "../../graphql/resolvers";
 import { User } from "../../models/User";
+import { connectMongo } from "../../util/dbConnect";
 
 interface IContext {
   user?: {
@@ -16,6 +17,9 @@ const apolloServer = new ApolloServer({
   typeDefs,
   resolvers,
   context: async ({ req }) => {
+    // Is this the right place to do this?
+    await connectMongo();
+
     const context: IContext = {};
 
     if (req?.headers?.authorization) {

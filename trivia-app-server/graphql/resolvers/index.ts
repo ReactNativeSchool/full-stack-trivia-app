@@ -7,7 +7,6 @@ import {
   ApolloError,
 } from "apollo-server-micro";
 
-import { connectMongo } from "../../util/dbConnect";
 import { User } from "../../models/User";
 import { Question } from "../../models/Question";
 
@@ -26,8 +25,6 @@ const ROLES = {
 export const resolvers = {
   Query: {
     question: async (parent, args, context) => {
-      await connectMongo();
-
       // If an authenticated user get a question they haven't answered before.
       let questionsAlreadyAsked = [];
       if (context.user) {
@@ -64,8 +61,6 @@ export const resolvers = {
     },
 
     me: async (parent, args, context) => {
-      await connectMongo();
-
       requireAuth(context);
 
       const user = await User.findOne({ _id: context.user._id });
@@ -86,8 +81,6 @@ export const resolvers = {
 
   Mutation: {
     register: async (parent, args) => {
-      await connectMongo();
-
       const { username, password } = args;
 
       const user = await new User({ username, password }).save();
@@ -100,8 +93,6 @@ export const resolvers = {
       };
     },
     signin: async (parent, args) => {
-      await connectMongo();
-
       const { username, password } = args;
 
       const user = await User.findOne({ username }).exec();
@@ -128,8 +119,6 @@ export const resolvers = {
     },
 
     fetchQuestions: async (parent, args, context) => {
-      await connectMongo();
-
       requireAuth(context);
 
       if (!context.user.roles.includes(ROLES.admin)) {
@@ -162,8 +151,6 @@ export const resolvers = {
     },
 
     completeQuestion: async (parent, args, context) => {
-      await connectMongo();
-
       requireAuth(context);
 
       if (!args.questionId) {
