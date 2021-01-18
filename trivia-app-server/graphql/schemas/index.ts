@@ -3,7 +3,7 @@ import { gql } from "apollo-server-micro";
 export const typeDefs = gql`
   type Query {
     question: Question # a random question. If authed one they haven't answered before
-    # me: User # the current user's profile info and stats. Requires auth.
+    me: User # the current user's profile info and stats. Requires auth.
     # NOT MVP
     # quiz: [Question] # defined collection of questions. Requires auth
   }
@@ -40,10 +40,10 @@ export const typeDefs = gql`
     token: String
   }
 
-  # type User {
-  #   username: String
-  #   status: Stats
-  # }
+  type User {
+    username: String
+    stats: Stats
+  }
 
   type Stats {
     questionsAnswered: Int

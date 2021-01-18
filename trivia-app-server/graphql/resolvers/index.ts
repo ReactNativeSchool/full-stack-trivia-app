@@ -64,6 +64,26 @@ export const resolvers = {
 
       return question;
     },
+
+    me: async (parent, args, context) => {
+      await connectMongo();
+
+      await requireAuth(context);
+
+      const user = await User.findOne({ _id: context.userId });
+
+      const questionsAnsweredCorrectly = user.correctQuestions?.length || 0;
+      const questionsAnswered =
+        questionsAnsweredCorrectly + user.incorrectQuestions?.length || 0;
+
+      return {
+        username: user.username,
+        stats: {
+          questionsAnswered,
+          questionsAnsweredCorrectly,
+        },
+      };
+    },
   },
 
   Mutation: {
