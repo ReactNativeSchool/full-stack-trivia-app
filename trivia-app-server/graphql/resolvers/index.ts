@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { isBoolean, shuffle } from "lodash";
+import { isBoolean, shuffle, unescape } from "lodash";
 import mongoose from "mongoose";
 import {
   AuthenticationError,
@@ -142,8 +142,7 @@ export const resolvers = {
       const formattedResults = results.map((result) => {
         return {
           ...result,
-          // TODO: unescape the result
-          question: result.question,
+          question: unescape(result.question),
           answers: [
             {
               answer: result.correct_answer,
@@ -181,8 +180,6 @@ export const resolvers = {
       }
 
       let modifier;
-
-      // TODO: avoid duplicates between correctQuestions and incorrectQuestions
 
       if (args.correct) {
         modifier = { correctQuestions: args.questionId };
