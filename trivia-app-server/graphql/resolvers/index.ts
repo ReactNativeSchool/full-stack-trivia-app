@@ -12,17 +12,9 @@ import { User } from "../../models/User";
 import { Question } from "../../models/Question";
 
 const requireAuth = async (context) => {
-  if (!context.userId) {
+  if (!context.user) {
     throw new AuthenticationError("Authentication required.");
   }
-
-  const user = await User.findOne({ _id: context.userId });
-
-  if (!user) {
-    throw new AuthenticationError("Invalid user. Sign in.");
-  }
-
-  context.user = user;
 
   return;
 };
@@ -38,8 +30,8 @@ export const resolvers = {
 
       // If an authenticated user get a question they haven't answered before.
       let questionsAlreadyAsked = [];
-      if (context.userId) {
-        const user = await User.findOne({ _id: context.userId });
+      if (context.user) {
+        const user = await User.findOne({ _id: context.user._id });
         if (user) {
           questionsAlreadyAsked = [
             ...user.correctQuestions.map((_id) => mongoose.Types.ObjectId(_id)),
@@ -74,9 +66,9 @@ export const resolvers = {
     me: async (parent, args, context) => {
       await connectMongo();
 
-      await requireAuth(context);
+      requireAuth(context);
 
-      const user = await User.findOne({ _id: context.userId });
+      const user = await User.findOne({ _id: context.user._id });
 
       const questionsAnsweredCorrectly = user.correctQuestions?.length || 0;
       const questionsAnswered =
@@ -138,7 +130,7 @@ export const resolvers = {
     fetchQuestions: async (parent, args, context) => {
       await connectMongo();
 
-      await requireAuth(context);
+      requireAuth(context);
 
       if (!context.user.roles.includes(ROLES.admin)) {
         throw new AuthenticationError("You're not authorized to do that.");
@@ -172,7 +164,7 @@ export const resolvers = {
     completeQuestion: async (parent, args, context) => {
       await connectMongo();
 
-      await requireAuth(context);
+      requireAuth(context);
 
       if (!args.questionId) {
         throw new UserInputError("No question specified.");
@@ -196,7 +188,7 @@ export const resolvers = {
       }
 
       const response = await User.findOneAndUpdate(
-        { _id: context.userId },
+        { _id: context.user._id },
         {
           // Use $addToSet over $push to avoid duplicates
           $addToSet: modifier,

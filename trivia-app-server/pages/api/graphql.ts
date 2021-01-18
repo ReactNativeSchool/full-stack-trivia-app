@@ -1,11 +1,15 @@
-import { ApolloServer } from "apollo-server-micro";
+import { AuthenticationError, ApolloServer } from "apollo-server-micro";
 import jwt from "jsonwebtoken";
 
 import { typeDefs } from "../../graphql/schemas";
 import { resolvers } from "../../graphql/resolvers";
+import { User } from "../../models/User";
 
 interface IContext {
-  userId?: string;
+  user?: {
+    username: string;
+    roles: [string];
+  };
 }
 
 const apolloServer = new ApolloServer({
@@ -19,7 +23,13 @@ const apolloServer = new ApolloServer({
 
       const decoded = await jwt.verify(token, process.env.JWT_SECRET);
 
-      context.userId = decoded._id;
+      const user = await User.findOne({ _id: decoded._id });
+
+      if (!user) {
+        throw new AuthenticationError("Invalid user.");
+      }
+
+      context.user = user;
     }
 
     return context;
