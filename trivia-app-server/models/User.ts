@@ -27,6 +27,10 @@ const UserSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  roles: {
+    type: [String],
+    default: [],
+  },
 });
 
 UserSchema.pre<IUser>("save", async function (next) {

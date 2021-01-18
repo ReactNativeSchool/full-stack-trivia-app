@@ -22,7 +22,13 @@ const requireAuth = async (context) => {
     throw new AuthenticationError("Invalid user. Sign in.");
   }
 
+  context.user = user;
+
   return;
+};
+
+const ROLES = {
+  admin: "admin",
 };
 
 export const resolvers = {
@@ -134,7 +140,9 @@ export const resolvers = {
 
       await requireAuth(context);
 
-      // TODO: this should be limited to people with an admin role
+      if (!context.user.roles.includes(ROLES.admin)) {
+        throw new AuthenticationError("You're not authorized to do that.");
+      }
 
       const res = await fetch("https://opentdb.com/api.php?amount=3");
       const { results } = await res.json();
