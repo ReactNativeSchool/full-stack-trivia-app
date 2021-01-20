@@ -28,15 +28,14 @@ export const resolvers = {
       // If an authenticated user get a question they haven't answered before.
       let questionsAlreadyAsked = [];
       if (context.user) {
-        const user = await User.findOne({ _id: context.user._id });
-        if (user) {
-          questionsAlreadyAsked = [
-            ...user.correctQuestions.map((_id) => mongoose.Types.ObjectId(_id)),
-            ...user.incorrectQuestions.map((_id) =>
-              mongoose.Types.ObjectId(_id)
-            ),
-          ];
-        }
+        questionsAlreadyAsked = [
+          ...context.user.correctQuestions.map((_id) =>
+            mongoose.Types.ObjectId(_id)
+          ),
+          ...context.user.incorrectQuestions.map((_id) =>
+            mongoose.Types.ObjectId(_id)
+          ),
+        ];
       }
 
       const questions = await Question.aggregate([
@@ -63,14 +62,14 @@ export const resolvers = {
     me: async (parent, args, context) => {
       requireAuth(context);
 
-      const user = await User.findOne({ _id: context.user._id });
-
-      const questionsAnsweredCorrectly = user.correctQuestions?.length || 0;
+      const questionsAnsweredCorrectly =
+        context.user.correctQuestions?.length || 0;
       const questionsAnswered =
-        questionsAnsweredCorrectly + user.incorrectQuestions?.length || 0;
+        questionsAnsweredCorrectly + context.user.incorrectQuestions?.length ||
+        0;
 
       return {
-        username: user.username,
+        username: context.user.username,
         stats: {
           questionsAnswered,
           questionsAnsweredCorrectly,
