@@ -80,7 +80,7 @@ export const resolvers = {
 
   Mutation: {
     register: async (parent, args) => {
-      const { username, password } = args;
+      const { username, password } = args.user;
 
       const user = await new User({ username, password }).save();
 

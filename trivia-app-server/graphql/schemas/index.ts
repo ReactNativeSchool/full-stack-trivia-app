@@ -9,12 +9,17 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    register(username: String!, password: String!): AuthResponse
+    register(user: NewUser): AuthResponse
     signin(username: String!, password: String!): AuthResponse
     fetchQuestions: FetchQuestionResponse
     completeQuestion(questionId: String!, correct: Boolean): Stats # call when answering a random question so it isn't displayed again (if authorized). Returns user's latest stats
     # Not MVP
     # completeQuiz: Stats # call when a quiz is completed so it isn't displayed again. Returns user's latest stats
+  }
+
+  input NewUser {
+    username: String
+    password: String!
   }
 
   type FetchQuestionResponse {
