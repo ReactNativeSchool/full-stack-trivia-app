@@ -173,16 +173,9 @@ export const resolvers = {
         modifier = { incorrectQuestions: args.questionId };
       }
 
-      const response = await User.findOneAndUpdate(
-        { _id: context.user._id },
-        {
-          // Use $addToSet over $push to avoid duplicates
-          $addToSet: modifier,
-        },
-        {
-          new: true,
-        }
-      );
+      // TypeScript has issues with findOneAndUpdate so here we are...
+      await User.updateOne({ _id: context.user._id }, { $addToSet: modifier });
+      const response = await User.findOne({ _id: context.user._id }).exec();
 
       const questionsAnsweredCorrectly = response.correctQuestions?.length || 0;
       const questionsAnswered =
